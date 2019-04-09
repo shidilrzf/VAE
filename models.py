@@ -58,54 +58,6 @@ class UnFlatten(nn.Module):
         return input.view(input.size(0), size, 1, 1)
 
 
-class VAE_conv(nn.Module):
-    def __init__(self, image_channels=3, d_hidden=1024, dim_z=32):
-        super(VAE_conv, self).__init__()
-        self.train_step = 0
-        self.best_loss = np.inf
-        self.encoder = nn.Sequential(
-            nn.Conv2d(image_channels, 32, kernel_size=4, stride=2),
-            nn.ReLU(),
-            nn.Conv2d(32, 64, kernel_size=4, stride=2),
-            nn.ReLU(),
-            nn.Conv2d(64, 128, kernel_size=4, stride=2),
-            nn.ReLU(),
-            nn.Conv2d(128, 256, kernel_size=4, stride=2),
-            nn.ReLU(),
-            Flatten()
-        )
-
-        self.fc1 = nn.Linear(d_hidden, dim_z)
-        self.fc2 = nn.Linear(d_hidden, dim_z)
-        self.fc3 = nn.Linear(dim_z, d_hidden)
-
-        self.decoder = nn.Sequential(
-            UnFlatten(),
-            nn.ConvTranspose2d(d_hidden, 128, kernel_size=5, stride=2),
-            nn.ReLU(),
-            nn.ConvTranspose2d(128, 64, kernel_size=5, stride=2),
-            nn.ReLU(),
-            nn.ConvTranspose2d(64, 32, kernel_size=6, stride=2),
-            nn.ReLU(),
-            nn.ConvTranspose2d(32, image_channels, kernel_size=6, stride=2),
-            nn.Sigmoid(),
-        )
-    def encode(self, x):
-        return self.encoder(x)
-
-    def reparameterize(self, mu, logvar):
-        std = logvar.mul(0.5).exp_()
-        esp = torch.randn(*mu.size())
-        return mu + std * esp
-
-    def forward(self, x):
-        h = self.encoder(x)
-        mu, logvar = self.fc1(h), self.fc2(h)
-        z = self.reparameterize(mu, logvar)
-        z = self.fc3(z)
-        return self.decoder(z), mu, logvar
-
-
 class VAE_cnn(nn.Module):
 
     def __init__(self,dim_z):
